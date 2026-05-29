@@ -5,9 +5,9 @@ FastAPI backend for AI PR Review Assistant.
 The backend currently provides:
 
 - `GET /health`
-- `POST /api/analyze-pr` with GitHub PR metadata fetching, changed files fetching, deterministic Mock analysis, and the stable response schema
+- `POST /api/analyze-pr` with GitHub PR metadata fetching, changed files fetching, Rule Engine risk scanning, deterministic Mock analysis, and the stable response schema
 
-Rule Engine scanning, DeepSeekProvider, and Report Composer will be added in later PRs.
+DeepSeekProvider and Report Composer will be added in later PRs.
 
 ## Local Development
 
@@ -45,6 +45,23 @@ GET /repos/{owner}/{repo}/pulls/{pull_number}/files
 ```
 
 Set `GITHUB_TOKEN` in `backend/.env` to increase GitHub API rate limits. Do not commit `.env`.
+
+Rule Engine currently scans changed files and patch diff for:
+
+```text
+hardcoded-secret
+unsafe-html
+unsafe-eval
+sql-string-concat
+removed-error-handling
+removed-null-check
+config-change
+large-change
+missing-tests
+removed-tests
+complex-condition
+unclear-todo-fixme
+```
 
 Run tests:
 

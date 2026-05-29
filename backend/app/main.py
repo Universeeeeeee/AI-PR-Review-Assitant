@@ -13,6 +13,7 @@ from app.services.github_client import (
     InvalidPrUrlError,
 )
 from app.services.mock_analyzer import build_mock_analysis_from_context
+from app.services.rule_engine import analyze_rules
 
 app = FastAPI(title="AI PR Review Assistant API")
 
@@ -30,8 +31,9 @@ def analyze_pr(request: AnalyzePrRequest) -> AnalyzePrResponse:
     started = perf_counter()
     try:
         context = _get_github_client().fetch_pr_context(request.pr_url)
+        rule_risks = analyze_rules(context)
         duration_ms = int((perf_counter() - started) * 1000)
-        return build_mock_analysis_from_context(context, duration_ms=duration_ms)
+        return build_mock_analysis_from_context(context, rule_risks=rule_risks, duration_ms=duration_ms)
     except InvalidPrUrlError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

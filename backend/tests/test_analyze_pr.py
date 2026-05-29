@@ -33,7 +33,7 @@ def test_analyze_pr_returns_mock_review_contract():
     assert body["pr"]["author"] == "Universeeeeeee"
     assert body["pr"]["changedFiles"] == 2
 
-    assert body["analysis"]["riskLevel"] == "medium"
+    assert body["analysis"]["riskLevel"] == "high"
     assert body["analysis"]["truncated"] is True
     assert "feat: add mock PR analysis API" in body["analysis"]["summary"]
     assert body["analysis"]["fileSummaries"][0]["file"] == "backend/app/main.py"
@@ -95,6 +95,23 @@ def test_analyze_pr_maps_github_client_errors(error: Exception, status_code: int
     assert response.json()["detail"]["code"] == code
 
 
+def test_analyze_pr_returns_rule_engine_risks_from_github_patch():
+    app.state.github_client = FakeGitHubClient()
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/analyze-pr",
+        json={"prUrl": "https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/2"},
+    )
+    del app.state.github_client
+
+    assert response.status_code == 200
+    risks = response.json()["analysis"]["risks"]
+    rule_names = {risk["ruleName"] for risk in risks}
+    assert "hardcoded-secret" in rule_names
+    assert "mock-review-focus" not in rule_names
+
+
 class FakeGitHubClient:
     def fetch_pr_context(self, pr_url: str) -> GitHubPrContext:
         if not pr_url.startswith("https://github.com/"):
@@ -121,7 +138,7 @@ class FakeGitHubClient:
                     status="modified",
                     additions=30,
                     deletions=2,
-                    patch="@@ -1 +1 @@\n-old\n+new",
+                    patch='@@ -1 +1 @@\n-old\n+ API_TOKEN = "secret-value"\n',
                 )
             ],
             truncated=True,
