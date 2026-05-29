@@ -1,4 +1,5 @@
 # AI PR Review Assistant
+<<<<<<< HEAD
 
 AI PR Review Assistant 是一个面向开发者的 Web 工具。用户输入 GitHub Pull Request 链接后，系统会获取 PR 基本信息、changed files 和 patch diff，并通过规则引擎与 AI Provider 混合分析，生成 PR 总结、可能风险、Review 建议和可复制的 Markdown Review。
 
@@ -194,3 +195,5 @@ If an online demo is not available, reviewers should still be able to reproduce 
 ## Original Work And Dependencies
 
 This project is built for the training-camp AI PR Review Assistant topic. Third-party dependencies are listed in `backend/requirements.txt` and `frontend/package.json`. Original project functionality is implemented in the application modules under `backend/app` and `frontend/src`.
+=======
+>>>>>>> origin/main
