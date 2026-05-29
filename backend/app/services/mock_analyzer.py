@@ -1,4 +1,3 @@
-import re
 from datetime import UTC, datetime
 
 from app.schemas import (
@@ -10,33 +9,18 @@ from app.schemas import (
     RiskItem,
     WarningItem,
 )
-
-
-class InvalidPrUrlError(ValueError):
-    """Raised when the input is not a public GitHub Pull Request URL."""
-
-
-PR_URL_PATTERN = re.compile(
-    r"^https://github\.com/(?P<owner>[^/\s]+)/(?P<repo>[^/\s]+)/pull/(?P<number>\d+)/?(?:[?#].*)?$"
-)
+from app.services.github_client import GitHubPrContext, parse_github_pr_url
 
 
 def build_mock_analysis(pr_url: str, duration_ms: int = 0) -> AnalyzePrResponse:
-    match = PR_URL_PATTERN.match(pr_url.strip())
-    if not match:
-        raise InvalidPrUrlError("Invalid GitHub Pull Request URL")
-
-    owner = match.group("owner")
-    repo = match.group("repo")
-    number = int(match.group("number"))
-    canonical_url = f"https://github.com/{owner}/{repo}/pull/{number}"
+    parsed = parse_github_pr_url(pr_url)
 
     pr = PrMetadata(
-        url=canonical_url,
-        owner=owner,
-        repo=repo,
-        number=number,
-        title=f"Mock analysis for {owner}/{repo}#{number}",
+        url=parsed.canonical_url,
+        owner=parsed.owner,
+        repo=parsed.repo,
+        number=parsed.number,
+        title=f"Mock analysis for {parsed.owner}/{parsed.repo}#{parsed.number}",
         author="mock-author",
         base_branch="main",
         head_branch="feature/mock-pr",
@@ -81,7 +65,7 @@ def build_mock_analysis(pr_url: str, duration_ms: int = 0) -> AnalyzePrResponse:
     return AnalyzePrResponse(
         pr=pr,
         analysis=AnalysisResult(
-            summary=f"这是针对 {owner}/{repo}#{number} 的 Mock PR Review 报告，用于验证 API 契约和前端集成流程。",
+            summary=f"这是针对 {parsed.owner}/{parsed.repo}#{parsed.number} 的 Mock PR Review 报告，用于验证 API 契约和前端集成流程。",
             risk_level="medium",
             truncated=False,
             file_summaries=file_summaries,
@@ -100,6 +84,75 @@ def build_mock_analysis(pr_url: str, duration_ms: int = 0) -> AnalyzePrResponse:
                     message="当前未配置 DeepSeek API Key，系统使用 Mock 模式生成报告。",
                 )
             ],
+        ),
+    )
+
+
+def build_mock_analysis_from_context(context: GitHubPrContext, duration_ms: int = 0) -> AnalyzePrResponse:
+    file_summaries = [
+        FileSummary(
+            file=file.filename,
+            status=file.status,
+            additions=file.additions,
+            deletions=file.deletions,
+            summary=f"Mock 总结：`{file.filename}` 本次变更包含 {file.additions} 行新增和 {file.deletions} 行删除。",
+        )
+        for file in context.files
+    ]
+    if not file_summaries:
+        file_summaries = [
+            FileSummary(
+                file="N/A",
+                status="unknown",
+                additions=0,
+                deletions=0,
+                summary="GitHub 未返回可分析的 patch 文件内容。",
+            )
+        ]
+
+    risks = [
+        RiskItem(
+            id="mock-review-focus-001",
+            severity="medium",
+            source="rule",
+            rule_name="mock-review-focus",
+            file=file_summaries[0].file,
+            title="建议确认核心变更影响范围",
+            description="Mock 分析提示：当前 PR 已获取真实 GitHub 元信息和 changed files，建议人工确认关键文件的行为变化。",
+            suggestion="建议结合 PR diff 检查核心逻辑、异常处理和测试覆盖是否匹配本次变更。",
+        )
+    ]
+    suggestions = [
+        "建议确认 PR 描述中包含功能描述、实现思路和测试方式。",
+        "建议在后续 Rule Engine 接入后，对安全、稳定性和测试风险做更细粒度扫描。",
+    ]
+
+    markdown_review = _build_markdown_review(context.pr, file_summaries, risks, suggestions)
+    warnings = [
+        WarningItem(
+            code="MOCK_MODE",
+            message="当前未配置 DeepSeek API Key，系统使用 Mock 模式生成报告。",
+        )
+    ]
+    warnings.extend(context.warnings)
+
+    return AnalyzePrResponse(
+        pr=context.pr,
+        analysis=AnalysisResult(
+            summary=f"Mock 分析已基于 GitHub PR `{context.pr.title}` 获取真实元信息和 changed files。",
+            risk_level="medium",
+            truncated=context.truncated,
+            file_summaries=file_summaries,
+            risks=risks,
+            suggestions=suggestions,
+            markdown_review=markdown_review,
+        ),
+        meta=AnalyzeMeta(
+            provider="mock",
+            mock=True,
+            analyzed_at=datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            duration_ms=duration_ms,
+            warnings=warnings,
         ),
     )
 
