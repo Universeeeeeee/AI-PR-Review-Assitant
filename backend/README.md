@@ -5,9 +5,9 @@ FastAPI backend for AI PR Review Assistant.
 The backend currently provides:
 
 - `GET /health`
-- `POST /api/analyze-pr` with deterministic Mock analysis and the stable response schema
+- `POST /api/analyze-pr` with GitHub PR metadata fetching, changed files fetching, deterministic Mock analysis, and the stable response schema
 
-GitHub API fetching, Rule Engine scanning, DeepSeekProvider, and Report Composer will be added in later PRs.
+Rule Engine scanning, DeepSeekProvider, and Report Composer will be added in later PRs.
 
 ## Local Development
 
@@ -36,6 +36,15 @@ Invoke-RestMethod `
   -ContentType "application/json" `
   -Body '{"prUrl":"https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/1"}'
 ```
+
+The analyze endpoint currently calls these GitHub REST API endpoints for public PRs:
+
+```text
+GET /repos/{owner}/{repo}/pulls/{pull_number}
+GET /repos/{owner}/{repo}/pulls/{pull_number}/files
+```
+
+Set `GITHUB_TOKEN` in `backend/.env` to increase GitHub API rate limits. Do not commit `.env`.
 
 Run tests:
 

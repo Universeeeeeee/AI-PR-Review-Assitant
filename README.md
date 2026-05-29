@@ -70,9 +70,10 @@ Current status:
 ```text
 PR 1: project skeleton, README draft, frontend shell, backend health check.
 PR 2: Mock /api/analyze-pr endpoint and shared response schemas.
+PR 3: GitHub PR metadata and changed files fetching before Mock analysis.
 ```
 
-GitHub API fetching, Rule Engine scanning, and DeepSeek integration will be added in later PRs.
+Rule Engine scanning and DeepSeek integration will be added in later PRs.
 
 ## Quick Start
 
@@ -144,9 +145,9 @@ AI_PROVIDER=auto
 
 Behavior:
 
-- Current PR 2 backend returns deterministic Mock analysis from `/api/analyze-pr`.
+- Current PR 3 backend fetches public GitHub PR metadata and changed files, then returns deterministic Mock analysis.
 - Later PRs will switch `AI_PROVIDER=auto` to use `DeepSeekProvider` when `DEEPSEEK_API_KEY` is present.
-- Once GitHub integration is implemented, Mock mode will use real PR metadata and rule results.
+- Once Rule Engine is implemented, Mock mode will also include deterministic rule results.
 
 The frontend must show:
 
