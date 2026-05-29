@@ -51,7 +51,7 @@ backend/
       report_composer.py
 ```
 
-First-version backend flow:
+Target first-version backend flow:
 
 ```text
 POST /api/analyze-pr
@@ -65,7 +65,14 @@ POST /api/analyze-pr
   -> return to frontend
 ```
 
-PR 1 only initializes the project skeleton. The real `/api/analyze-pr` flow will be added across later PRs.
+Current status:
+
+```text
+PR 1: project skeleton, README draft, frontend shell, backend health check.
+PR 2: Mock /api/analyze-pr endpoint and shared response schemas.
+```
+
+GitHub API fetching, Rule Engine scanning, and DeepSeek integration will be added in later PRs.
 
 ## Quick Start
 
@@ -137,9 +144,9 @@ AI_PROVIDER=auto
 
 Behavior:
 
-- If `DEEPSEEK_API_KEY` is present, the backend uses `DeepSeekProvider`.
-- If `DEEPSEEK_API_KEY` is missing, the backend uses `MockProvider`.
-- Mock mode still uses real PR metadata and rule results once the GitHub integration is implemented.
+- Current PR 2 backend returns deterministic Mock analysis from `/api/analyze-pr`.
+- Later PRs will switch `AI_PROVIDER=auto` to use `DeepSeekProvider` when `DEEPSEEK_API_KEY` is present.
+- Once GitHub integration is implemented, Mock mode will use real PR metadata and rule results.
 
 The frontend must show:
 

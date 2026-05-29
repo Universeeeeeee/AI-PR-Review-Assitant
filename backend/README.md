@@ -2,7 +2,12 @@
 
 FastAPI backend for AI PR Review Assistant.
 
-PR 1 includes only the project skeleton and `GET /health`. The main PR analysis endpoint, GitHub client, rule engine, AI Provider, and report composer will be added in later PRs.
+The backend currently provides:
+
+- `GET /health`
+- `POST /api/analyze-pr` with deterministic Mock analysis and the stable response schema
+
+GitHub API fetching, Rule Engine scanning, DeepSeekProvider, and Report Composer will be added in later PRs.
 
 ## Local Development
 
@@ -20,6 +25,16 @@ Health check:
 
 ```text
 http://localhost:8000/health
+```
+
+Mock PR analysis:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://localhost:8000/api/analyze-pr `
+  -ContentType "application/json" `
+  -Body '{"prUrl":"https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/1"}'
 ```
 
 Run tests:
