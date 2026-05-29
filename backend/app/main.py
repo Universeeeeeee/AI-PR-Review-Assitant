@@ -26,14 +26,15 @@ def health_check() -> dict[str, str]:
     }
 
 
-@app.post("/api/analyze-pr", response_model=AnalyzePrResponse)
+@app.post("/api/analyze-pr", response_model=AnalyzePrResponse, response_model_by_alias=True)
 def analyze_pr(request: AnalyzePrRequest) -> AnalyzePrResponse:
     started = perf_counter()
     try:
         context = _get_github_client().fetch_pr_context(request.pr_url)
         rule_risks = analyze_rules(context)
-        duration_ms = int((perf_counter() - started) * 1000)
-        return build_mock_analysis_from_context(context, rule_risks=rule_risks, duration_ms=duration_ms)
+        response = build_mock_analysis_from_context(context, rule_risks=rule_risks, duration_ms=0)
+        response.meta.duration_ms = int((perf_counter() - started) * 1000)
+        return response
     except InvalidPrUrlError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
