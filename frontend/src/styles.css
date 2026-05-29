@@ -1,0 +1,180 @@
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #18202f;
+  background: #f4f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid #d8dee8;
+  background: #ffffff;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #5c6b82;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.65rem, 2vw, 2.1rem);
+  line-height: 1.15;
+}
+
+h2 {
+  margin-bottom: 14px;
+  font-size: 1rem;
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 0;
+  flex: 1;
+}
+
+.sidebar {
+  padding: 24px;
+  border-right: 1px solid #d8dee8;
+  background: #ffffff;
+}
+
+.main-panel {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  padding: 24px;
+}
+
+.input-panel,
+.result-panel {
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px;
+}
+
+.panel-heading,
+.input-row,
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-heading {
+  justify-content: space-between;
+}
+
+.pr-form {
+  display: grid;
+  gap: 8px;
+}
+
+label {
+  color: #35445c;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #c9d2df;
+  border-radius: 6px;
+  padding: 11px 12px;
+  color: #18202f;
+  background: #ffffff;
+}
+
+button {
+  border: 0;
+  border-radius: 6px;
+  padding: 11px 14px;
+  color: #ffffff;
+  background: #2367c9;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ghost-button {
+  padding: 7px 10px;
+  color: #35445c;
+  background: #eef2f7;
+}
+
+.empty-state {
+  color: #68778e;
+  border: 1px dashed #c9d2df;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: #5b3b00;
+  background: #fff0c2;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    padding: 20px;
+  }
+
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #d8dee8;
+  }
+
+  .input-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
