@@ -8,6 +8,7 @@ AI PR Review Assistant 是一个面向开发者的 Web 工具。用户输入 Git
 ## Core Features
 
 - 输入公开 GitHub PR 链接并分析变更。
+- 基于 diff 和文件路径执行规则风险扫描。
 - 展示 PR 概览、总体风险级别、PR 总结、文件摘要、可能风险和 Review 建议。
 - 支持可复制 Markdown Review。
 - 支持 DeepSeek 真实模型分析。
@@ -71,9 +72,10 @@ Current status:
 PR 1: project skeleton, README draft, frontend shell, backend health check.
 PR 2: Mock /api/analyze-pr endpoint and shared response schemas.
 PR 3: GitHub PR metadata and changed files fetching before Mock analysis.
+PR 4: Rule Engine scans changed files and patch diff for deterministic risks.
 ```
 
-Rule Engine scanning and DeepSeek integration will be added in later PRs.
+DeepSeek integration will be added in a later PR.
 
 ## Quick Start
 
@@ -145,9 +147,24 @@ AI_PROVIDER=auto
 
 Behavior:
 
-- Current PR 3 backend fetches public GitHub PR metadata and changed files, then returns deterministic Mock analysis.
+- Current PR 4 backend fetches public GitHub PR metadata and changed files, runs Rule Engine scanning, then returns deterministic Mock analysis.
 - Later PRs will switch `AI_PROVIDER=auto` to use `DeepSeekProvider` when `DEEPSEEK_API_KEY` is present.
-- Once Rule Engine is implemented, Mock mode will also include deterministic rule results.
+- Mock mode includes deterministic rule results in `analysis.risks`.
+
+## Rule Engine
+
+The current Rule Engine scans changed file paths and patch diff lines. It does not perform AST or cross-file semantic analysis.
+
+First batch rules:
+
+```text
+security: hardcoded-secret, unsafe-html, unsafe-eval, sql-string-concat
+stability: removed-error-handling, removed-null-check, config-change, large-change
+tests: missing-tests, removed-tests
+maintainability: complex-condition, unclear-todo-fixme
+```
+
+Rule results are review hints, not absolute bug claims. Reports should use wording such as “可能风险” and “建议确认”.
 
 The frontend must show:
 

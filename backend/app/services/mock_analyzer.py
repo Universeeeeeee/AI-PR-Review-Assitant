@@ -88,7 +88,11 @@ def build_mock_analysis(pr_url: str, duration_ms: int = 0) -> AnalyzePrResponse:
     )
 
 
-def build_mock_analysis_from_context(context: GitHubPrContext, duration_ms: int = 0) -> AnalyzePrResponse:
+def build_mock_analysis_from_context(
+    context: GitHubPrContext,
+    rule_risks: list[RiskItem] | None = None,
+    duration_ms: int = 0,
+) -> AnalyzePrResponse:
     file_summaries = [
         FileSummary(
             file=file.filename,
@@ -110,22 +114,14 @@ def build_mock_analysis_from_context(context: GitHubPrContext, duration_ms: int 
             )
         ]
 
-    risks = [
-        RiskItem(
-            id="mock-review-focus-001",
-            severity="medium",
-            source="rule",
-            rule_name="mock-review-focus",
-            file=file_summaries[0].file,
-            title="建议确认核心变更影响范围",
-            description="Mock 分析提示：当前 PR 已获取真实 GitHub 元信息和 changed files，建议人工确认关键文件的行为变化。",
-            suggestion="建议结合 PR diff 检查核心逻辑、异常处理和测试覆盖是否匹配本次变更。",
-        )
-    ]
+    risks = rule_risks if rule_risks is not None else []
     suggestions = [
         "建议确认 PR 描述中包含功能描述、实现思路和测试方式。",
-        "建议在后续 Rule Engine 接入后，对安全、稳定性和测试风险做更细粒度扫描。",
     ]
+    if risks:
+        suggestions.append("建议优先人工确认规则引擎标记的可能风险，并结合真实 diff 判断是否需要修改。")
+    else:
+        suggestions.append("当前规则引擎未发现第一批确定性风险，仍建议人工 Review 核心变更路径。")
 
     markdown_review = _build_markdown_review(context.pr, file_summaries, risks, suggestions)
     warnings = [
@@ -140,7 +136,7 @@ def build_mock_analysis_from_context(context: GitHubPrContext, duration_ms: int 
         pr=context.pr,
         analysis=AnalysisResult(
             summary=f"Mock 分析已基于 GitHub PR `{context.pr.title}` 获取真实元信息和 changed files。",
-            risk_level="medium",
+            risk_level=_overall_risk_level(risks),
             truncated=context.truncated,
             file_summaries=file_summaries,
             risks=risks,
@@ -185,3 +181,11 @@ def _build_markdown_review(
         "### Notes\n\n"
         "当前为 Mock 模式结果，需要人工 Review 结合真实 diff 确认。"
     )
+
+
+def _overall_risk_level(risks: list[RiskItem]) -> str:
+    if any(risk.severity == "high" for risk in risks):
+        return "high"
+    if any(risk.severity == "medium" for risk in risks):
+        return "medium"
+    return "low"
