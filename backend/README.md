@@ -5,9 +5,9 @@ FastAPI backend for AI PR Review Assistant.
 The backend currently provides:
 
 - `GET /health`
-- `POST /api/analyze-pr` with GitHub PR metadata fetching, changed files fetching, Rule Engine risk scanning, deterministic Mock analysis, and the stable response schema
+- `POST /api/analyze-pr` with GitHub PR metadata fetching, changed files fetching, Rule Engine risk scanning, pluggable AI Provider analysis, and the stable response schema
 
-DeepSeekProvider and Report Composer will be added in later PRs.
+The analyze flow uses `MockProvider` by default when no DeepSeek key is configured. When `DEEPSEEK_API_KEY` is present and `AI_PROVIDER=auto`, it calls DeepSeek through the OpenAI-compatible chat completions API and then composes a stable response through `report_composer.py`.
 
 ## Local Development
 
@@ -45,6 +45,32 @@ GET /repos/{owner}/{repo}/pulls/{pull_number}/files
 ```
 
 Set `GITHUB_TOKEN` in `backend/.env` to increase GitHub API rate limits. Do not commit `.env`.
+
+## AI Provider Configuration
+
+```env
+AI_PROVIDER=auto
+DEEPSEEK_API_KEY=
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+AI_TIMEOUT_SECONDS=30
+```
+
+Provider behavior:
+
+```text
+AI_PROVIDER=auto
+- With DEEPSEEK_API_KEY: use DeepSeekProvider
+- Without DEEPSEEK_API_KEY: use MockProvider
+- DeepSeek timeout / API error / invalid JSON: fall back to MockProvider and return a warning
+
+AI_PROVIDER=mock
+- Always use MockProvider
+
+AI_PROVIDER=deepseek
+- Require DEEPSEEK_API_KEY
+- Provider failures return HTTP 502 with detail.code=AI_PROVIDER_ERROR
+```
 
 Rule Engine currently scans changed files and patch diff for:
 
