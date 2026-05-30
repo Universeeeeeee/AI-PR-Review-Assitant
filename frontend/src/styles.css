@@ -23,6 +23,12 @@ input {
   font: inherit;
 }
 
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -99,6 +105,79 @@ h2 {
   gap: 12px;
 }
 
+.result-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.result-title-row h2 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.result-summary {
+  display: grid;
+  gap: 18px;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.meta-grid span {
+  min-width: 0;
+  border: 1px solid #d8dee8;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #35445c;
+  background: #f7f9fc;
+  font-size: 0.88rem;
+}
+
+.warning-list {
+  display: grid;
+  gap: 10px;
+}
+
+.warning-item,
+.error-box {
+  border: 1px solid #f0d58d;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff8e7;
+}
+
+.warning-item {
+  display: grid;
+  gap: 4px;
+}
+
+.warning-item strong {
+  color: #765100;
+}
+
+.warning-item span,
+.summary-block p,
+.error-box p {
+  margin: 0;
+  color: #35445c;
+  line-height: 1.55;
+}
+
+.summary-block {
+  border-top: 1px solid #e4e9f0;
+  padding-top: 16px;
+}
+
+.summary-block h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
 .panel-heading {
   justify-content: space-between;
 }
@@ -150,13 +229,34 @@ button {
 .risk-badge {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
   min-height: 28px;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 4px 10px;
   color: #5b3b00;
   background: #fff0c2;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.risk-badge--loading {
+  color: #16406f;
+  background: #dceeff;
+}
+
+.risk-badge--low {
+  color: #145a35;
+  background: #dff5e8;
+}
+
+.risk-badge--medium {
+  color: #6d4a00;
+  background: #fff0c2;
+}
+
+.risk-badge--high {
+  color: #8a1f17;
+  background: #ffe1dc;
 }
 
 @media (max-width: 760px) {
@@ -176,5 +276,14 @@ button {
   .input-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .result-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
   }
 }

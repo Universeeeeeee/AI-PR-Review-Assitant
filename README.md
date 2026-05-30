@@ -73,6 +73,7 @@ PR 2: Mock /api/analyze-pr endpoint and shared response schemas.
 PR 3: GitHub PR metadata and changed files fetching before Mock analysis.
 PR 4: Rule Engine scans changed files and patch diff for deterministic risks.
 PR 5: pluggable AI Provider layer with Mock / DeepSeek switching and fallback.
+PR 6: frontend workbench submits PR URLs to the backend and renders basic status, warning, and error states.
 ```
 
 ## Quick Start
@@ -106,6 +107,7 @@ uvicorn app.main:app --reload
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
@@ -129,6 +131,13 @@ MAX_FILES=20
 MAX_PATCH_CHARS=30000
 REQUEST_TIMEOUT=60
 AI_TIMEOUT_SECONDS=30
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+The frontend can optionally configure the backend base URL:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
 Do not commit real `.env` files, API keys, or GitHub tokens. `.gitignore` is configured to keep local secret files out of Git while allowing `.env.example` templates.
