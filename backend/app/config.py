@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     max_patch_chars: int = Field(default=30000, alias="MAX_PATCH_CHARS")
     request_timeout: int = Field(default=60, alias="REQUEST_TIMEOUT")
     ai_timeout_seconds: int = Field(default=30, alias="AI_TIMEOUT_SECONDS")
+    cors_origins: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173",
+        alias="CORS_ORIGINS",
+    )
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -21,3 +25,7 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def parse_cors_origins(value: str) -> list[str]:
+    return [origin.strip() for origin in value.split(",") if origin.strip()]

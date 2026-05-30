@@ -46,6 +46,12 @@ GET /repos/{owner}/{repo}/pulls/{pull_number}/files
 
 Set `GITHUB_TOKEN` in `backend/.env` to increase GitHub API rate limits. Do not commit `.env`.
 
+For local frontend calls from Vite, the backend allows these origins by default:
+
+```env
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
 ## AI Provider Configuration
 
 ```env
@@ -54,6 +60,7 @@ DEEPSEEK_API_KEY=
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 AI_TIMEOUT_SECONDS=30
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 Provider behavior:

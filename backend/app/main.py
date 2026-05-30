@@ -1,9 +1,11 @@
 from time import perf_counter
 
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import Settings
 from app.config import get_settings
+from app.config import parse_cors_origins
 from app.schemas import AnalyzePrRequest, AnalyzePrResponse, WarningItem
 from app.services.ai_provider import AIProvider, AIProviderError, MockProvider, build_ai_provider
 from app.services.github_client import (
@@ -18,6 +20,13 @@ from app.services.report_composer import compose_review_response
 from app.services.rule_engine import analyze_rules
 
 app = FastAPI(title="AI PR Review Assistant API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=parse_cors_origins(get_settings().cors_origins),
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.get("/health")
