@@ -4,6 +4,10 @@ AI PR Review Assistant 是一个面向开发者的 Web 工具。用户输入 Git
 
 第一版定位是辅助人工 Review，而不是替代人工结论。页面和报告会使用“可能风险”“建议确认”“建议补充测试”等措辞，帮助 Reviewer 更快聚焦需要关注的变更。
 
+![AI PR Review Assistant workbench](docs/assets/workbench-demo.png)
+
+Detailed architecture and design notes are available in [docs/design.md](docs/design.md).
+
 ## Core Features
 
 - 输入公开 GitHub PR 链接并分析变更。
@@ -77,6 +81,20 @@ PR 6: frontend workbench submits PR URLs to the backend and renders basic status
 PR 7: frontend renders detailed results, supports Markdown Review copy, and stores recent analyses in localStorage.
 ```
 
+## Recommended Review Path
+
+1. Follow Quick Start to run the backend and frontend locally.
+2. Keep `AI_PROVIDER=auto` and leave `DEEPSEEK_API_KEY` empty for Mock mode, or configure DeepSeek for real model output.
+3. Open `http://localhost:5173`.
+4. Analyze a public GitHub PR URL, for example:
+
+```text
+https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/7
+```
+
+5. Review PR metadata, summary, possible risks, warnings, suggestions, and Markdown Review output.
+6. Use `Copy Markdown` to copy the generated review text.
+
 ## Quick Start
 
 ### 1. Start Backend
@@ -145,6 +163,47 @@ Do not commit real `.env` files, API keys, or GitHub tokens. `.gitignore` is con
 
 DeepSeek API compatibility is documented in the official DeepSeek API docs: [Your First API Call](https://api-docs.deepseek.com/) and [Models](https://api-docs.deepseek.com/api/list-models).
 
+## API Contract
+
+`POST /api/analyze-pr`
+
+Request:
+
+```json
+{
+  "prUrl": "https://github.com/owner/repo/pull/123"
+}
+```
+
+Successful response:
+
+```text
+pr        GitHub PR metadata
+analysis  summary, riskLevel, truncated, fileSummaries, risks, suggestions, markdownReview
+meta      provider, mock, analyzedAt, durationMs, warnings
+```
+
+Error response:
+
+```json
+{
+  "detail": {
+    "code": "INVALID_PR_URL",
+    "message": "请输入有效的 GitHub Pull Request URL。"
+  }
+}
+```
+
+Error code mapping:
+
+```text
+INVALID_PR_URL        400
+GITHUB_NOT_FOUND      404
+GITHUB_RATE_LIMITED   429
+GITHUB_API_ERROR      502
+AI_PROVIDER_ERROR     502
+```
+
 ## Mock Mode
 
 Default mode:
@@ -185,6 +244,23 @@ The frontend must show:
 
 When auto fallback happens, the frontend should also show warning codes such as `AI_TIMEOUT`, `AI_PROVIDER_ERROR`, or `AI_INVALID_JSON`.
 
+## Verification
+
+Backend:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm test -- --run
+npm run build
+```
+
 ## Current Limits
 
 - 当前版本主要支持公开 GitHub PR。
@@ -223,10 +299,23 @@ PR template:
 
 ## Deployment Plan
 
-Local run is the first priority for evaluation. Optional online deployment can use:
+Local run is the first priority for evaluation. Optional online deployment can use the same frontend/backend split:
 
-- Frontend: Vercel or Netlify.
-- Backend: Render, Railway, or Fly.io.
+Frontend deployment:
+
+- Use Vercel or Netlify.
+- Set the project root to `frontend`.
+- Build command: `npm run build`.
+- Publish directory: `dist`.
+- Configure `VITE_API_BASE_URL` to the deployed backend URL.
+
+Backend deployment:
+
+- Use Render, Railway, or Fly.io.
+- Set the service root to `backend`.
+- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+- Configure `AI_PROVIDER`, `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`, `GITHUB_TOKEN`, `MAX_FILES`, `MAX_PATCH_CHARS`, `REQUEST_TIMEOUT`, `AI_TIMEOUT_SECONDS`, and `CORS_ORIGINS`.
+- Set `CORS_ORIGINS` to the deployed frontend origin.
 
 If an online demo is not available, reviewers should still be able to reproduce the project locally through the Quick Start steps.
 
