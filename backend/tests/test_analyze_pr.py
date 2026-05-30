@@ -1,9 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
-import app.main as main_module
+from app.config import Settings
 from app.main import app
-from app.schemas import AnalyzePrResponse, PrMetadata, WarningItem
+from app.schemas import PrMetadata, WarningItem
+from app.services.ai_provider import AIAnalysisDraft, AIProviderError
 from app.services.github_client import (
     ChangedFile,
     GitHubApiError,
@@ -113,17 +114,9 @@ def test_analyze_pr_returns_rule_engine_risks_from_github_patch():
     assert "mock-review-focus" not in rule_names
 
 
-def test_analyze_pr_duration_includes_report_generation_time(monkeypatch):
+def test_analyze_pr_duration_includes_report_generation_time():
     app.state.github_client = FakeGitHubClient()
-    original_builder = main_module.build_mock_analysis_from_context
-
-    def slow_builder(*args, **kwargs) -> AnalyzePrResponse:
-        import time
-
-        time.sleep(0.03)
-        return original_builder(*args, **kwargs)
-
-    monkeypatch.setattr(main_module, "build_mock_analysis_from_context", slow_builder)
+    app.state.ai_provider = SlowAIProvider()
     client = TestClient(app)
 
     response = client.post(
@@ -131,6 +124,7 @@ def test_analyze_pr_duration_includes_report_generation_time(monkeypatch):
         json={"prUrl": "https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/2"},
     )
     del app.state.github_client
+    del app.state.ai_provider
 
     assert response.status_code == 200
     assert response.json()["meta"]["durationMs"] >= 30
@@ -160,6 +154,88 @@ def test_analyze_pr_response_uses_camel_case_keys():
     assert "analyzed_at" not in body["meta"]
     assert "durationMs" in body["meta"]
     assert "duration_ms" not in body["meta"]
+
+
+def test_analyze_pr_uses_injected_ai_provider():
+    app.state.github_client = FakeGitHubClient()
+    app.state.ai_provider = FakeAIProvider(
+        name="deepseek",
+        mock=False,
+        draft=AIAnalysisDraft(
+            summary="AI Provider 总结。",
+            file_summaries={"backend/app/main.py": "AI Provider 文件摘要。"},
+            suggestions=["建议确认 Provider 集成路径。"],
+        ),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/analyze-pr",
+        json={"prUrl": "https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/2"},
+    )
+    provider = app.state.ai_provider
+    del app.state.github_client
+    del app.state.ai_provider
+
+    assert response.status_code == 200
+    body = response.json()
+    assert provider.called is True
+    assert body["analysis"]["summary"] == "AI Provider 总结。"
+    assert body["analysis"]["fileSummaries"][0]["summary"] == "AI Provider 文件摘要。"
+    assert body["analysis"]["suggestions"] == ["建议确认 Provider 集成路径。"]
+    assert body["meta"]["provider"] == "deepseek"
+    assert body["meta"]["mock"] is False
+
+
+def test_analyze_pr_auto_mode_provider_error_falls_back_to_mock():
+    app.state.github_client = FakeGitHubClient()
+    app.state.settings = _settings(ai_provider="auto")
+    app.state.ai_provider = ErrorAIProvider(AIProviderError("AI_PROVIDER_ERROR", "deepseek failed"))
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/analyze-pr",
+        json={"prUrl": "https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/2"},
+    )
+    del app.state.github_client
+    del app.state.settings
+    del app.state.ai_provider
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["provider"] == "mock"
+    assert body["meta"]["mock"] is True
+    assert [warning["code"] for warning in body["meta"]["warnings"]] == [
+        "MOCK_MODE",
+        "PATCH_TRUNCATED",
+        "AI_PROVIDER_ERROR",
+    ]
+    warning_messages = {warning["code"]: warning["message"] for warning in body["meta"]["warnings"]}
+    assert warning_messages["MOCK_MODE"] == "当前 AI Provider 不可用，系统使用 Mock 模式生成报告。"
+    assert warning_messages["AI_PROVIDER_ERROR"] == "AI Provider 调用失败，系统已使用 Mock 模式生成报告。"
+
+
+def test_analyze_pr_forced_deepseek_provider_error_returns_502():
+    app.state.github_client = FakeGitHubClient()
+    app.state.settings = _settings(ai_provider="deepseek")
+    app.state.ai_provider = ErrorAIProvider(AIProviderError("AI_PROVIDER_ERROR", "deepseek failed"))
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/analyze-pr",
+        json={"prUrl": "https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/2"},
+    )
+    del app.state.github_client
+    del app.state.settings
+    del app.state.ai_provider
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": {
+            "code": "AI_PROVIDER_ERROR",
+            "message": "deepseek failed",
+        }
+    }
 
 
 class FakeGitHubClient:
@@ -207,3 +283,47 @@ class ErrorGitHubClient:
 
     def fetch_pr_context(self, pr_url: str) -> GitHubPrContext:
         raise self._error
+
+
+class FakeAIProvider:
+    def __init__(self, name: str, mock: bool, draft: AIAnalysisDraft):
+        self.name = name
+        self.mock = mock
+        self._draft = draft
+        self.called = False
+
+    def analyze(self, context: GitHubPrContext, rule_risks):
+        self.called = True
+        return self._draft
+
+
+class ErrorAIProvider:
+    name = "deepseek"
+    mock = False
+
+    def __init__(self, error: AIProviderError):
+        self._error = error
+
+    def analyze(self, context: GitHubPrContext, rule_risks):
+        raise self._error
+
+
+class SlowAIProvider:
+    name = "mock"
+    mock = True
+
+    def analyze(self, context: GitHubPrContext, rule_risks):
+        import time
+
+        time.sleep(0.03)
+        return AIAnalysisDraft(summary="", file_summaries={}, suggestions=[])
+
+
+def _settings(ai_provider: str) -> Settings:
+    return Settings(
+        AI_PROVIDER=ai_provider,
+        DEEPSEEK_API_KEY="test-key",
+        DEEPSEEK_BASE_URL="https://api.deepseek.test",
+        DEEPSEEK_MODEL="deepseek-v4-flash",
+        AI_TIMEOUT_SECONDS=5,
+    )

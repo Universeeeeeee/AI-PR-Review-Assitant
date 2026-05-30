@@ -1,5 +1,4 @@
 # AI PR Review Assistant
-<<<<<<< HEAD
 
 AI PR Review Assistant 是一个面向开发者的 Web 工具。用户输入 GitHub Pull Request 链接后，系统会获取 PR 基本信息、changed files 和 patch diff，并通过规则引擎与 AI Provider 混合分析，生成 PR 总结、可能风险、Review 建议和可复制的 Markdown Review。
 
@@ -73,9 +72,8 @@ PR 1: project skeleton, README draft, frontend shell, backend health check.
 PR 2: Mock /api/analyze-pr endpoint and shared response schemas.
 PR 3: GitHub PR metadata and changed files fetching before Mock analysis.
 PR 4: Rule Engine scans changed files and patch diff for deterministic risks.
+PR 5: pluggable AI Provider layer with Mock / DeepSeek switching and fallback.
 ```
-
-DeepSeek integration will be added in a later PR.
 
 ## Quick Start
 
@@ -147,9 +145,12 @@ AI_PROVIDER=auto
 
 Behavior:
 
-- Current PR 4 backend fetches public GitHub PR metadata and changed files, runs Rule Engine scanning, then returns deterministic Mock analysis.
-- Later PRs will switch `AI_PROVIDER=auto` to use `DeepSeekProvider` when `DEEPSEEK_API_KEY` is present.
-- Mock mode includes deterministic rule results in `analysis.risks`.
+- `AI_PROVIDER=auto` without `DEEPSEEK_API_KEY` uses `MockProvider`.
+- `AI_PROVIDER=auto` with `DEEPSEEK_API_KEY` uses `DeepSeekProvider`.
+- `AI_PROVIDER=mock` always uses `MockProvider`.
+- `AI_PROVIDER=deepseek` requires `DEEPSEEK_API_KEY`; missing key or provider errors return `AI_PROVIDER_ERROR`.
+- In auto mode, DeepSeek timeout, API error, or invalid JSON falls back to Mock mode and adds a warning.
+- Mock and DeepSeek modes both preserve deterministic Rule Engine results in `analysis.risks`.
 
 ## Rule Engine
 
@@ -171,6 +172,8 @@ The frontend must show:
 ```text
 当前未配置 DeepSeek API Key，系统使用 Mock 模式生成报告。
 ```
+
+When auto fallback happens, the frontend should also show warning codes such as `AI_TIMEOUT`, `AI_PROVIDER_ERROR`, or `AI_INVALID_JSON`.
 
 ## Current Limits
 
@@ -220,5 +223,3 @@ If an online demo is not available, reviewers should still be able to reproduce 
 ## Original Work And Dependencies
 
 This project is built for the training-camp AI PR Review Assistant topic. Third-party dependencies are listed in `backend/requirements.txt` and `frontend/package.json`. Original project functionality is implemented in the application modules under `backend/app` and `frontend/src`.
-=======
->>>>>>> origin/main
