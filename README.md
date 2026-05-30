@@ -74,6 +74,7 @@ PR 3: GitHub PR metadata and changed files fetching before Mock analysis.
 PR 4: Rule Engine scans changed files and patch diff for deterministic risks.
 PR 5: pluggable AI Provider layer with Mock / DeepSeek switching and fallback.
 PR 6: frontend workbench submits PR URLs to the backend and renders basic status, warning, and error states.
+PR 7: frontend renders detailed results, supports Markdown Review copy, and stores recent analyses in localStorage.
 ```
 
 ## Quick Start

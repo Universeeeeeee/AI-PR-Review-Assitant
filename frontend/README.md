@@ -2,7 +2,9 @@
 
 React + Vite + TypeScript frontend for AI PR Review Assistant.
 
-The current frontend includes the workbench shell, PR URL submission, backend API integration, loading state, basic result summary, warning display, and backend error display. Detailed risk sections, Markdown copy, and localStorage history will be added in later PRs.
+The current frontend includes the workbench shell, PR URL submission, backend API integration, loading state, result summary, changed-file details, possible risk sections, review suggestions, Markdown Review copy, warning display, backend error display, and localStorage recent analyses.
+
+Recent analyses are stored in the browser only. Clearing browser storage or using another browser will reset this history.
 
 ## Local Development
 

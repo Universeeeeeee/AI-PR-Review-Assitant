@@ -122,6 +122,41 @@ h2 {
   gap: 18px;
 }
 
+.history-list,
+.detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.history-item {
+  display: grid;
+  width: 100%;
+  gap: 6px;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 12px;
+  color: #18202f;
+  background: #ffffff;
+  text-align: left;
+}
+
+.history-item:hover {
+  border-color: #9cb7de;
+  background: #f7f9fc;
+}
+
+.history-repo {
+  color: #5c6b82;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.history-title {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -173,9 +208,81 @@ h2 {
   padding-top: 16px;
 }
 
-.summary-block h3 {
+.summary-block h3,
+.detail-section h3 {
   margin: 0 0 8px;
   font-size: 0.95rem;
+}
+
+.detail-section {
+  border-top: 1px solid #e4e9f0;
+  padding-top: 16px;
+}
+
+.detail-item {
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.detail-item p {
+  margin: 8px 0 0;
+  color: #35445c;
+  line-height: 1.5;
+}
+
+.detail-item-heading,
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-item-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-item-heading span:not(.risk-badge) {
+  color: #5c6b82;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.suggestion-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #35445c;
+  line-height: 1.55;
+}
+
+.suggestion-list li + li {
+  margin-top: 8px;
+}
+
+.muted-text {
+  color: #68778e;
+}
+
+.copy-status {
+  margin: 0 0 8px;
+  color: #145a35;
+  font-weight: 700;
+}
+
+.markdown-preview {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  padding: 14px;
+  color: #18202f;
+  background: #f7f9fc;
+  font: 0.88rem/1.5 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  white-space: pre-wrap;
 }
 
 .panel-heading {
@@ -285,5 +392,11 @@ button {
 
   .meta-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-item-heading,
+  .section-heading-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
