@@ -56,32 +56,32 @@ function App() {
 
   async function handleCopyMarkdown(markdownReview: string) {
     if (!navigator.clipboard) {
-      setCopyStatus("Clipboard unavailable.");
+      setCopyStatus("当前浏览器不支持剪贴板复制。");
       return;
     }
     await navigator.clipboard.writeText(markdownReview);
-    setCopyStatus("Markdown copied.");
+    setCopyStatus("Markdown 已复制。");
   }
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Developer Review Workbench</p>
+          <p className="eyebrow">开发者 Review 工作台</p>
           <h1>AI PR Review Assistant</h1>
         </div>
       </header>
 
       <div className="workbench">
-        <aside className="sidebar" aria-label="Recent analyses">
+        <aside className="sidebar" aria-label="最近分析">
           <div className="panel-heading">
-            <h2>Recent Analyses</h2>
+            <h2>最近分析</h2>
             <button type="button" className="ghost-button" onClick={handleClearHistory}>
-              Clear
+              清空
             </button>
           </div>
           {history.length === 0 ? (
-            <div className="empty-state">No analyses yet.</div>
+            <div className="empty-state">暂无分析记录。</div>
           ) : (
             <div className="history-list">
               {history.map((item) => (
@@ -103,7 +103,7 @@ function App() {
 
         <main className="main-panel">
           <section className="input-panel" aria-labelledby="analyze-heading">
-            <h2 id="analyze-heading">Analyze Pull Request</h2>
+            <h2 id="analyze-heading">分析 Pull Request</h2>
             <form className="pr-form" onSubmit={handleSubmit}>
               <label htmlFor="pr-url">GitHub PR URL</label>
               <div className="input-row">
@@ -117,32 +117,32 @@ function App() {
                   disabled={viewState === "loading"}
                 />
                 <button type="submit" disabled={viewState === "loading"}>
-                  {viewState === "loading" ? "Analyzing" : "Analyze"}
+                  {viewState === "loading" ? "分析中" : "开始分析"}
                 </button>
               </div>
             </form>
           </section>
 
-          <section className="result-panel" aria-label="Review result">
+          <section className="result-panel" aria-label="评审结果">
             {viewState === "idle" && (
               <div className="status-row">
-                <span className="risk-badge">Pending</span>
-                <span>Waiting for a Pull Request URL.</span>
+                <span className="risk-badge">待分析</span>
+                <span>等待输入 Pull Request URL。</span>
               </div>
             )}
 
             {viewState === "loading" && (
               <div className="status-row">
-                <span className="risk-badge risk-badge--loading">Running</span>
-                <span>Analyzing Pull Request...</span>
+                <span className="risk-badge risk-badge--loading">分析中</span>
+                <span>正在分析 Pull Request...</span>
               </div>
             )}
 
             {viewState === "error" && (
               <div className="error-box" role="alert">
                 <div className="status-row">
-                  <span className="risk-badge risk-badge--high">Error</span>
-                  <span>Review request failed.</span>
+                  <span className="risk-badge risk-badge--high">错误</span>
+                  <span>分析请求失败。</span>
                 </div>
                 <p>{errorMessage}</p>
               </div>
@@ -180,14 +180,14 @@ function ResultSummary({
       </div>
 
       <div className="meta-grid">
-        <span>Provider: {result.meta.provider}</span>
-        <span>{result.pr.changedFiles} files</span>
+        <span>AI Provider：{result.meta.provider}</span>
+        <span>{result.pr.changedFiles} 个文件</span>
         <span>+{result.pr.additions} / -{result.pr.deletions}</span>
         <span>{result.meta.durationMs} ms</span>
       </div>
 
       {result.meta.warnings.length > 0 && (
-        <div className="warning-list" aria-label="Analysis warnings">
+        <div className="warning-list" aria-label="分析警告">
           {result.meta.warnings.map((warning) => (
             <div className="warning-item" key={`${warning.code}-${warning.message}`}>
               <strong>{warningLabel(warning.code)}</strong>
@@ -198,18 +198,18 @@ function ResultSummary({
       )}
 
       <div className="summary-block">
-        <h3>Summary</h3>
+        <h3>总结</h3>
         <p>{result.analysis.summary}</p>
       </div>
 
       <section className="detail-section" aria-labelledby="file-summaries-heading">
-        <h3 id="file-summaries-heading">Changed Files</h3>
+        <h3 id="file-summaries-heading">变更文件</h3>
         <div className="detail-list">
           {result.analysis.fileSummaries.map((file) => (
             <article className="detail-item" key={file.file}>
               <div className="detail-item-heading">
                 <strong>{file.file}</strong>
-                <span>{file.status} +{file.additions} / -{file.deletions}</span>
+                <span>{fileStatusLabel(file.status)} +{file.additions} / -{file.deletions}</span>
               </div>
               <p>{file.summary}</p>
             </article>
@@ -218,9 +218,9 @@ function ResultSummary({
       </section>
 
       <section className="detail-section" aria-labelledby="risks-heading">
-        <h3 id="risks-heading">Possible Risks</h3>
+        <h3 id="risks-heading">可能风险</h3>
         {result.analysis.risks.length === 0 ? (
-          <p className="muted-text">No possible risks were returned for this analysis.</p>
+          <p className="muted-text">本次分析未返回可能风险。</p>
         ) : (
           <div className="detail-list">
             {result.analysis.risks.map((risk) => (
@@ -231,7 +231,7 @@ function ResultSummary({
                 </div>
                 {risk.file && <p className="muted-text">{risk.file}</p>}
                 <p>{risk.description}</p>
-                <p>Suggestion: {risk.suggestion}</p>
+                <p>建议：{risk.suggestion}</p>
               </article>
             ))}
           </div>
@@ -239,9 +239,9 @@ function ResultSummary({
       </section>
 
       <section className="detail-section" aria-labelledby="suggestions-heading">
-        <h3 id="suggestions-heading">Review Suggestions</h3>
+        <h3 id="suggestions-heading">评审建议</h3>
         {result.analysis.suggestions.length === 0 ? (
-          <p className="muted-text">No additional suggestions were returned.</p>
+          <p className="muted-text">暂无额外建议。</p>
         ) : (
           <ul className="suggestion-list">
             {result.analysis.suggestions.map((suggestion) => (
@@ -255,7 +255,7 @@ function ResultSummary({
         <div className="section-heading-row">
           <h3 id="markdown-heading">Markdown Review</h3>
           <button type="button" className="ghost-button" onClick={() => onCopyMarkdown(result.analysis.markdownReview)}>
-            Copy Markdown
+            复制 Markdown
           </button>
         </div>
         {copyStatus && <p className="copy-status">{copyStatus}</p>}
@@ -266,16 +266,32 @@ function ResultSummary({
 }
 
 function riskLabel(level: AnalyzePrResponse["analysis"]["riskLevel"]) {
-  return `${level[0].toUpperCase()}${level.slice(1)} risk`;
+  const labels: Record<AnalyzePrResponse["analysis"]["riskLevel"], string> = {
+    low: "低风险",
+    medium: "中风险",
+    high: "高风险",
+  };
+  return labels[level];
+}
+
+function fileStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    added: "新增",
+    modified: "修改",
+    removed: "删除",
+    renamed: "重命名",
+    changed: "变更",
+  };
+  return labels[status] ?? status;
 }
 
 function warningLabel(code: string) {
   const labels: Record<string, string> = {
-    MOCK_MODE: "Mock mode",
-    PATCH_TRUNCATED: "Diff truncated",
-    AI_TIMEOUT: "AI timeout",
-    AI_PROVIDER_ERROR: "AI provider warning",
-    AI_INVALID_JSON: "AI response warning",
+    MOCK_MODE: "Mock 模式",
+    PATCH_TRUNCATED: "Diff 已截断",
+    AI_TIMEOUT: "AI 超时",
+    AI_PROVIDER_ERROR: "AI Provider 警告",
+    AI_INVALID_JSON: "AI 响应警告",
   };
   return labels[code] ?? code;
 }

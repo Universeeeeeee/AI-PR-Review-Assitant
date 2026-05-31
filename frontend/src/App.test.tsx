@@ -16,8 +16,8 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("AI PR Review Assistant")).toBeInTheDocument();
-    expect(screen.getByText("Recent Analyses")).toBeInTheDocument();
-    expect(screen.getByText("Analyze Pull Request")).toBeInTheDocument();
+    expect(screen.getByText("最近分析")).toBeInTheDocument();
+    expect(screen.getByText("分析 Pull Request")).toBeInTheDocument();
   });
 
   it("submits a PR URL and renders basic analysis result state", async () => {
@@ -27,17 +27,17 @@ describe("App", () => {
     fireEvent.change(screen.getByLabelText("GitHub PR URL"), {
       target: { value: "https://github.com/owner/repo/pull/1" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    fireEvent.click(screen.getByRole("button", { name: "开始分析" }));
 
-    expect(screen.getByText("Analyzing Pull Request...")).toBeInTheDocument();
+    expect(screen.getByText("正在分析 Pull Request...")).toBeInTheDocument();
 
     expect(await screen.findByRole("heading", { name: "Add API integration" })).toBeInTheDocument();
-    const resultRegion = screen.getByRole("region", { name: "Review result" });
+    const resultRegion = screen.getByRole("region", { name: "评审结果" });
     expect(within(resultRegion).getByText("owner/repo #1")).toBeInTheDocument();
-    expect(within(resultRegion).getAllByText("Medium risk").length).toBeGreaterThan(0);
-    expect(within(resultRegion).getByText("Provider: mock")).toBeInTheDocument();
-    expect(screen.getByText("Mock mode")).toBeInTheDocument();
-    expect(screen.getByText("Diff truncated")).toBeInTheDocument();
+    expect(within(resultRegion).getAllByText("中风险").length).toBeGreaterThan(0);
+    expect(within(resultRegion).getByText("AI Provider：mock")).toBeInTheDocument();
+    expect(screen.getByText("Mock 模式")).toBeInTheDocument();
+    expect(screen.getByText("Diff 已截断")).toBeInTheDocument();
     expect(screen.getByText("AI 总结：本 PR 接入前端 API 调用。")).toBeInTheDocument();
     expect(api.analyzePullRequest).toHaveBeenCalledWith("https://github.com/owner/repo/pull/1");
   });
@@ -51,25 +51,26 @@ describe("App", () => {
     fireEvent.change(screen.getByLabelText("GitHub PR URL"), {
       target: { value: "https://github.com/owner/repo/pull/1" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    fireEvent.click(screen.getByRole("button", { name: "开始分析" }));
 
-    expect(await screen.findByRole("heading", { name: "Changed Files" })).toBeInTheDocument();
-    const changedFilesSection = screen.getByRole("heading", { name: "Changed Files" }).closest("section")!;
+    expect(await screen.findByRole("heading", { name: "变更文件" })).toBeInTheDocument();
+    const changedFilesSection = screen.getByRole("heading", { name: "变更文件" }).closest("section")!;
     expect(within(changedFilesSection).getByText("frontend/src/App.tsx")).toBeInTheDocument();
+    expect(within(changedFilesSection).getByText("修改 +32 / -4")).toBeInTheDocument();
     expect(within(changedFilesSection).getByText("渲染分析结果详情。")).toBeInTheDocument();
 
-    expect(screen.getByRole("heading", { name: "Possible Risks" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "可能风险" })).toBeInTheDocument();
     expect(screen.getByText("建议确认测试覆盖")).toBeInTheDocument();
-    const suggestionsSection = screen.getByRole("heading", { name: "Review Suggestions" }).closest("section")!;
+    const suggestionsSection = screen.getByRole("heading", { name: "评审建议" }).closest("section")!;
     expect(within(suggestionsSection).getByText("建议补充前端交互测试。")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Markdown Review" })).toBeInTheDocument();
     const markdownSection = screen.getByRole("heading", { name: "Markdown Review" }).closest("section")!;
     expect(within(markdownSection).getByText(/## AI PR Review/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy Markdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "复制 Markdown" }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("## AI PR Review\n\nSummary"));
-    expect(screen.getByText("Markdown copied.")).toBeInTheDocument();
+    expect(screen.getByText("Markdown 已复制。")).toBeInTheDocument();
   });
 
   it("renders backend error message and keeps the URL editable", async () => {
@@ -80,11 +81,11 @@ describe("App", () => {
 
     const input = screen.getByLabelText("GitHub PR URL");
     fireEvent.change(input, { target: { value: "https://example.com/not-a-pr" } });
-    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    fireEvent.click(screen.getByRole("button", { name: "开始分析" }));
 
     expect(await screen.findByText("请输入有效的 GitHub Pull Request URL。")).toBeInTheDocument();
     expect(input).toHaveValue("https://example.com/not-a-pr");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Analyze" })).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "开始分析" })).not.toBeDisabled());
   });
 
   it("saves successful analyses to history, restores them without refetching, and clears history", async () => {
@@ -94,24 +95,24 @@ describe("App", () => {
     fireEvent.change(screen.getByLabelText("GitHub PR URL"), {
       target: { value: "https://github.com/owner/repo/pull/1" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    fireEvent.click(screen.getByRole("button", { name: "开始分析" }));
 
-    expect(await screen.findByRole("button", { name: "owner/repo #1 Add API integration Medium risk" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "owner/repo #1 Add API integration 中风险" })).toBeInTheDocument();
     expect(localStorage.getItem("ai-pr-review-history")).toContain("Add API integration");
 
     analyzeSpy.mockClear();
     fireEvent.change(screen.getByLabelText("GitHub PR URL"), {
       target: { value: "https://github.com/another/repo/pull/2" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "owner/repo #1 Add API integration Medium risk" }));
+    fireEvent.click(screen.getByRole("button", { name: "owner/repo #1 Add API integration 中风险" }));
 
     expect(screen.getByLabelText("GitHub PR URL")).toHaveValue("https://github.com/owner/repo/pull/1");
     expect(screen.getByText("AI 总结：本 PR 接入前端 API 调用。")).toBeInTheDocument();
     expect(analyzeSpy).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    fireEvent.click(screen.getByRole("button", { name: "清空" }));
 
-    expect(screen.getByText("No analyses yet.")).toBeInTheDocument();
+    expect(screen.getByText("暂无分析记录。")).toBeInTheDocument();
     expect(localStorage.getItem("ai-pr-review-history")).toBeNull();
   });
 });
