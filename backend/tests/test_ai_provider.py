@@ -36,6 +36,77 @@ def test_mock_provider_setting_forces_mock_even_with_key():
     assert isinstance(provider, MockProvider)
 
 
+def test_mock_provider_generates_contextual_review_from_real_pr_data():
+    provider = MockProvider()
+    context = GitHubPrContext(
+        pr=PrMetadata(
+            url="https://github.com/owner/repo/pull/42",
+            owner="owner",
+            repo="repo",
+            number=42,
+            title="Improve auth flow",
+            author="alice",
+            base_branch="main",
+            head_branch="feat/auth",
+            changed_files=3,
+            additions=86,
+            deletions=14,
+        ),
+        files=[
+            ChangedFile(
+                filename="backend/app/main.py",
+                status="modified",
+                additions=40,
+                deletions=6,
+                patch='@@ -1 +1 @@\n-old\n+ API_TOKEN = "secret-value"\n',
+            ),
+            ChangedFile(
+                filename="frontend/src/App.tsx",
+                status="modified",
+                additions=30,
+                deletions=8,
+                patch="@@ -1 +1 @@\n-old\n+ fetch('/api/analyze-pr')\n",
+            ),
+            ChangedFile(
+                filename="README.md",
+                status="modified",
+                additions=16,
+                deletions=0,
+                patch="@@ -1 +1 @@\n-old\n+ docs\n",
+            ),
+        ],
+        truncated=True,
+        warnings=[],
+    )
+
+    draft = provider.analyze(
+        context,
+        [
+            RiskItem(
+                id="rule-hardcoded-secret-abc123",
+                severity="high",
+                source="rule",
+                rule_name="hardcoded-secret",
+                file="backend/app/main.py",
+                title="疑似硬编码密钥",
+                description="新增内容中出现疑似敏感配置。",
+                suggestion="建议改为从环境变量读取。",
+            )
+        ],
+    )
+
+    assert "owner/repo#42" in draft.summary
+    assert "3 个文件" in draft.summary
+    assert "+86/-14" in draft.summary
+    assert "最高风险 high" in draft.summary
+    assert "后端逻辑" in draft.file_summaries["backend/app/main.py"]
+    assert "疑似硬编码密钥" in draft.file_summaries["backend/app/main.py"]
+    assert "前端界面" in draft.file_summaries["frontend/src/App.tsx"]
+    assert "文档" in draft.file_summaries["README.md"]
+    assert any("高风险" in suggestion and "疑似硬编码密钥" in suggestion for suggestion in draft.suggestions)
+    assert any("截断" in suggestion for suggestion in draft.suggestions)
+
+
 def test_deepseek_provider_without_key_raises_provider_error():
     with pytest.raises(AIProviderError) as exc_info:
         build_ai_provider(_settings(ai_provider="deepseek", deepseek_api_key=""))
