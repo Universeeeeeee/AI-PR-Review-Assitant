@@ -26,6 +26,7 @@ $BackendLog = Join-Path $BackendDir ".start-dev-uvicorn.log"
 $BackendErr = Join-Path $BackendDir ".start-dev-uvicorn.err.log"
 $FrontendLog = Join-Path $FrontendDir ".start-dev-vite.log"
 $FrontendErr = Join-Path $FrontendDir ".start-dev-vite.err.log"
+$PidFile = Join-Path $RootDir ".start-dev-pids"
 
 function Assert-Command {
     param(
@@ -123,11 +124,16 @@ if ($SetupOnly) {
     exit 0
 }
 
+$pidEntries = @()
+if (Test-Path -LiteralPath $PidFile) {
+    Remove-Item -LiteralPath $PidFile -Force
+}
+
 if (Test-PortInUse -Port 8000) {
     Write-Host "Port 8000 is already in use. Backend was not started."
 } else {
     Write-Host "Starting backend on http://localhost:8000 ..."
-    Start-Process -FilePath "powershell" `
+    $backendProcess = Start-Process -FilePath "powershell" `
         -WindowStyle Hidden `
         -WorkingDirectory $BackendDir `
         -ArgumentList @(
@@ -137,14 +143,16 @@ if (Test-PortInUse -Port 8000) {
             ".\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
         ) `
         -RedirectStandardOutput $BackendLog `
-        -RedirectStandardError $BackendErr
+        -RedirectStandardError $BackendErr `
+        -PassThru
+    $pidEntries += "backend=$($backendProcess.Id)"
 }
 
 if (Test-PortInUse -Port 5173) {
     Write-Host "Port 5173 is already in use. Frontend was not started."
 } else {
     Write-Host "Starting frontend on http://localhost:5173 ..."
-    Start-Process -FilePath "powershell" `
+    $frontendProcess = Start-Process -FilePath "powershell" `
         -WindowStyle Hidden `
         -WorkingDirectory $FrontendDir `
         -ArgumentList @(
@@ -154,7 +162,13 @@ if (Test-PortInUse -Port 5173) {
             "npm run dev -- --host 127.0.0.1 --port 5173"
         ) `
         -RedirectStandardOutput $FrontendLog `
-        -RedirectStandardError $FrontendErr
+        -RedirectStandardError $FrontendErr `
+        -PassThru
+    $pidEntries += "frontend=$($frontendProcess.Id)"
+}
+
+if ($pidEntries.Count -gt 0) {
+    Set-Content -LiteralPath $PidFile -Value $pidEntries -Encoding ASCII
 }
 
 $backendReady = Wait-HttpOk -Url "http://localhost:8000/health" -TimeoutSeconds 30
@@ -170,6 +184,10 @@ Write-Host "  Backend stdout: $BackendLog"
 Write-Host "  Backend stderr: $BackendErr"
 Write-Host "  Frontend stdout: $FrontendLog"
 Write-Host "  Frontend stderr: $FrontendErr"
+Write-Host "  PID file:        $PidFile"
+Write-Host ""
+Write-Host "Stop servers:"
+Write-Host "  .\scripts\stop-dev.ps1"
 
 if (-not $backendReady -or -not $frontendReady) {
     Write-Host ""
