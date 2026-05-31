@@ -106,7 +106,29 @@ https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/7
 
 ### 快速开始
 
-#### 1. 启动后端
+推荐方式：一键启动本地开发环境（Windows PowerShell）。
+
+```powershell
+.\scripts\start-dev.ps1
+```
+
+如果 PowerShell 执行策略拦截脚本，可以使用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-dev.ps1
+```
+
+启动后访问：
+
+```text
+http://localhost:5173
+```
+
+未配置 DeepSeek API Key 时，系统会自动使用 Mock 模式，仍可体验完整分析流程。
+
+#### 手动启动
+
+后端：
 
 PowerShell:
 
@@ -130,19 +152,13 @@ cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-#### 2. 启动前端
+前端：
 
 ```bash
 cd frontend
 npm install
 cp .env.example .env
 npm run dev
-```
-
-#### 3. 打开页面
-
-```text
-http://localhost:5173
 ```
 
 ### 环境变量
@@ -229,6 +245,7 @@ AI_PROVIDER=auto
 - `AI_PROVIDER=deepseek`：强制使用 `DeepSeekProvider`，缺少 Key 或调用失败时返回 `AI_PROVIDER_ERROR`。
 - auto 模式下 DeepSeek 超时、API 错误或返回非 JSON 时，会降级到 Mock 模式并返回警告提示。
 - Mock 与 DeepSeek 都会保留 Rule Engine 的确定性风险结果。
+- Mock 模式不是静态占位数据。它会基于真实 GitHub PR 元信息、changed files、patch diff、规则风险、测试变更和截断状态生成确定性的总结、文件摘要和 Review 建议，保证评委没有 API Key 时也能体验完整流程。
 
 ### 规则引擎
 
@@ -309,6 +326,8 @@ PR 描述模板：
 ### 部署方案
 
 本地运行是第一优先级。在线部署可沿用前后端分离方案。
+
+Docker 不作为默认快速开始路径。它可以作为后续统一部署方案补充，但本项目第一版优先保证评审能用本地脚本快速复现。
 
 前端部署：
 
@@ -436,7 +455,29 @@ https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/7
 
 ### Quick Start
 
-#### 1. Start Backend
+Recommended path: start the local development environment with one command on Windows PowerShell.
+
+```powershell
+.\scripts\start-dev.ps1
+```
+
+If PowerShell execution policy blocks the script, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-dev.ps1
+```
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+When no DeepSeek API key is configured, the app automatically uses Mock mode and still supports the full demo flow.
+
+#### Manual Startup
+
+Backend:
 
 PowerShell:
 
@@ -460,19 +501,13 @@ cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-#### 2. Start Frontend
+Frontend:
 
 ```bash
 cd frontend
 npm install
 cp .env.example .env
 npm run dev
-```
-
-#### 3. Open App
-
-```text
-http://localhost:5173
 ```
 
 ### Environment Variables
@@ -559,6 +594,7 @@ Behavior:
 - `AI_PROVIDER=deepseek` requires `DEEPSEEK_API_KEY`; missing key or provider failures return `AI_PROVIDER_ERROR`.
 - In auto mode, DeepSeek timeout, API errors, or invalid JSON falls back to Mock mode and adds a warning.
 - Mock and DeepSeek modes both preserve deterministic Rule Engine risks.
+- Mock mode is not static placeholder data. It uses real GitHub PR metadata, changed files, patch diff, rule risks, test changes, and truncation status to generate deterministic summaries, file notes, and review suggestions, so reviewers can evaluate the full flow without an API key.
 
 ### Rule Engine
 
@@ -639,6 +675,8 @@ PR template:
 ### Deployment Plan
 
 Local run is the first priority for evaluation. Optional online deployment can use the same frontend/backend split.
+
+Docker is not the default Quick Start path. It can be added later as a deployment convenience, but the first version prioritizes a fast local script that reviewers can run with minimal setup.
 
 Frontend deployment:
 

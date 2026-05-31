@@ -86,6 +86,8 @@ DeepSeek output is treated as an intermediate draft, not the final API response.
 
 In `auto` mode, provider failures fall back to Mock mode and add warnings such as `AI_TIMEOUT`, `AI_PROVIDER_ERROR`, or `AI_INVALID_JSON`. In forced `deepseek` mode, provider failures return an API error so real model integration issues are visible during debugging.
 
+Mock mode is treated as the default reviewer path, not as a throwaway placeholder. It generates deterministic analysis from real GitHub PR metadata, changed files, patch diff signals, Rule Engine risks, test-file presence, and truncation state. This keeps the demo useful when reviewers do not have a DeepSeek API key.
+
 ## Frontend Workbench
 
 The React workbench has three main areas:

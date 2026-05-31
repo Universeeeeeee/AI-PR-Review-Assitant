@@ -1,13 +1,14 @@
 import json
 import re
 from dataclasses import dataclass, field
+from collections.abc import Iterable
 from typing import Protocol
 
 import httpx
 
 from app.config import Settings
 from app.schemas import RiskItem
-from app.services.github_client import GitHubPrContext
+from app.services.github_client import ChangedFile, GitHubPrContext
 
 
 class AIProviderError(RuntimeError):
@@ -37,22 +38,13 @@ class MockProvider:
     mock = True
 
     def analyze(self, context: GitHubPrContext, rule_risks: list[RiskItem]) -> AIAnalysisDraft:
-        suggestions = ["建议确认 PR 描述中包含功能描述、实现思路和测试方式。"]
-        if rule_risks:
-            suggestions.append("建议优先人工确认规则引擎标记的可能风险，并结合真实 diff 判断是否需要修改。")
-        else:
-            suggestions.append("当前规则引擎未发现第一批确定性风险，仍建议人工 Review 核心变更路径。")
-
         return AIAnalysisDraft(
-            summary=f"Mock 分析已基于 GitHub PR `{context.pr.title}` 获取真实元信息和 changed files。",
+            summary=_build_mock_summary(context, rule_risks),
             file_summaries={
-                file.filename: (
-                    f"Mock 总结：`{file.filename}` 本次变更包含 {file.additions} 行新增和 "
-                    f"{file.deletions} 行删除。"
-                )
+                file.filename: _build_mock_file_summary(file, _risks_for_file(rule_risks, file.filename))
                 for file in context.files
             },
-            suggestions=suggestions,
+            suggestions=_build_mock_suggestions(context, rule_risks),
         )
 
 
@@ -146,6 +138,155 @@ def build_ai_provider(
         )
 
     raise AIProviderError("AI_PROVIDER_ERROR", "AI_PROVIDER 只支持 auto、mock 或 deepseek。")
+
+
+def _build_mock_summary(context: GitHubPrContext, rule_risks: list[RiskItem]) -> str:
+    changed_files = len(context.files) or context.pr.changed_files
+    areas = "、".join(_changed_areas(context.files)) or "通用代码"
+    if rule_risks:
+        risk_text = f"规则引擎标记 {len(rule_risks)} 条可能风险，最高风险 {_highest_risk(rule_risks)}。"
+    else:
+        risk_text = "规则引擎未发现第一批确定性风险。"
+
+    truncated_text = "当前 diff 已截断，结论应结合完整 PR 人工确认。" if context.truncated else "当前 diff 未触发截断。"
+    return (
+        f"Mock 分析基于 GitHub PR `{context.pr.owner}/{context.pr.repo}#{context.pr.number}`"
+        f"（{context.pr.title}），覆盖 {changed_files} 个文件，变更规模 +{context.pr.additions}/-{context.pr.deletions}。"
+        f"本次变更主要涉及{areas}。{risk_text}{truncated_text}"
+    )
+
+
+def _build_mock_file_summary(file: ChangedFile, file_risks: list[RiskItem]) -> str:
+    area = _file_area(file.filename)
+    cues = _patch_cues(file.filename, file.patch)
+    risk_text = _file_risk_text(file_risks)
+    return (
+        f"{area}文件 `{file.filename}` {file.status}，新增 {file.additions} 行、删除 {file.deletions} 行。"
+        f"{cues}{risk_text}"
+    )
+
+
+def _build_mock_suggestions(context: GitHubPrContext, rule_risks: list[RiskItem]) -> list[str]:
+    suggestions = ["建议确认 PR 描述中包含功能描述、实现思路和测试方式，并说明本次变更的主要验证路径。"]
+    high_risks = [risk for risk in rule_risks if risk.severity == "high"]
+    medium_risks = [risk for risk in rule_risks if risk.severity == "medium"]
+
+    if high_risks:
+        titles = "、".join(_unique(risk.title for risk in high_risks[:3]))
+        suggestions.append(f"建议优先人工确认高风险项：{titles}。")
+    elif medium_risks:
+        titles = "、".join(_unique(risk.title for risk in medium_risks[:3]))
+        suggestions.append(f"建议重点确认中风险项：{titles}。")
+    else:
+        suggestions.append("当前规则引擎未发现第一批确定性风险，仍建议人工 Review 核心变更路径。")
+
+    if _has_core_change(context.files) and not _has_test_change(context.files):
+        suggestions.append("本 PR 涉及核心代码但未看到测试文件变化，建议确认是否需要补充自动化测试。")
+    elif _has_test_change(context.files):
+        suggestions.append("本 PR 包含测试变更，建议确认新增或更新的测试覆盖了主要风险路径。")
+
+    if context.truncated:
+        suggestions.append("当前 PR diff 已截断，建议结合 GitHub 完整 diff 人工确认未展示部分。")
+
+    return suggestions
+
+
+def _changed_areas(files: list[ChangedFile]) -> list[str]:
+    return _unique(_file_area(file.filename) for file in files)
+
+
+def _file_area(filename: str) -> str:
+    normalized = filename.replace("\\", "/").lower()
+    basename = normalized.rsplit("/", 1)[-1]
+    if _is_test_file(normalized):
+        return "测试"
+    if normalized.startswith("backend/") or normalized.startswith("app/") or basename.endswith(".py"):
+        return "后端逻辑"
+    if normalized.startswith("frontend/") or normalized.startswith("src/") or basename.endswith((".tsx", ".jsx")):
+        return "前端界面"
+    if _is_config_file(normalized):
+        return "配置"
+    if normalized.startswith("docs/") or basename.endswith((".md", ".mdx", ".rst")):
+        return "文档"
+    if basename.endswith((".json", ".yaml", ".yml", ".toml")):
+        return "配置"
+    return "通用代码"
+
+
+def _patch_cues(filename: str, patch: str) -> str:
+    normalized = filename.replace("\\", "/").lower()
+    patch_lower = patch.lower()
+    cues: list[str] = []
+    if "fetch(" in patch_lower or "axios" in patch_lower or "/api/" in patch_lower:
+        cues.append("涉及接口请求或 API 调用路径")
+    if "route" in patch_lower or "fastapi" in patch_lower or "@app." in patch_lower:
+        cues.append("涉及后端路由或服务入口")
+    if "localstorage" in patch_lower:
+        cues.append("涉及浏览器本地历史记录")
+    if "deepseek" in patch_lower or "ai_provider" in normalized:
+        cues.append("涉及 AI Provider 配置或调用")
+    if "test" in normalized or "expect(" in patch_lower or "pytest" in patch_lower:
+        cues.append("涉及自动化测试")
+    if not cues:
+        return ""
+    return f"变更线索：{'；'.join(_unique(cues))}。"
+
+
+def _file_risk_text(file_risks: list[RiskItem]) -> str:
+    if not file_risks:
+        return "未在该文件上标记确定性风险。"
+    risk_parts = [f"{risk.title}（{risk.severity}）" for risk in file_risks[:3]]
+    return f"规则引擎提示：{'；'.join(risk_parts)}。"
+
+
+def _risks_for_file(rule_risks: list[RiskItem], filename: str) -> list[RiskItem]:
+    return [risk for risk in rule_risks if risk.file == filename]
+
+
+def _highest_risk(rule_risks: list[RiskItem]) -> str:
+    order = {"high": 3, "medium": 2, "low": 1}
+    return max((risk.severity for risk in rule_risks), key=lambda severity: order[severity])
+
+
+def _is_config_file(filename: str) -> bool:
+    basename = filename.rsplit("/", 1)[-1]
+    return (
+        basename == ".env.example"
+        or "config" in filename
+        or basename.endswith((".env", ".yaml", ".yml", ".json", ".toml"))
+    )
+
+
+def _is_test_file(filename: str) -> bool:
+    basename = filename.rsplit("/", 1)[-1]
+    return (
+        "/test/" in filename
+        or "/tests/" in filename
+        or "__tests__" in filename
+        or basename.startswith("test_")
+        or basename.endswith("_test.py")
+        or ".test." in basename
+        or ".spec." in basename
+    )
+
+
+def _has_core_change(files: list[ChangedFile]) -> bool:
+    return any(_file_area(file.filename) in {"后端逻辑", "前端界面", "通用代码"} for file in files)
+
+
+def _has_test_change(files: list[ChangedFile]) -> bool:
+    return any(_is_test_file(file.filename.replace("\\", "/").lower()) for file in files)
+
+
+def _unique(values: Iterable[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
 
 
 def _build_prompt(context: GitHubPrContext, rule_risks: list[RiskItem]) -> str:
