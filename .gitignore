@@ -28,6 +28,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Local dev server process tracking
+.start-dev-pids
+
 # Editors / OS
 .idea/
 .vscode/
