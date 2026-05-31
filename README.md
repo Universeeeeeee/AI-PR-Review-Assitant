@@ -8,11 +8,9 @@
 
 ## 中文
 
-> 默认阅读语言：中文。需要英文版本时，请点击顶部的 English。
-
 AI PR Review Assistant 是一个面向开发者的 Web 工具。用户输入 GitHub Pull Request 链接后，系统会获取 PR 基本信息、changed files 和 patch diff，并通过规则引擎与 AI Provider 混合分析，生成 PR 总结、可能风险、Review 建议和可复制的 Markdown Review。
 
-第一版定位是辅助人工 Review，而不是替代人工结论。页面和报告会使用“可能风险”“建议确认”“建议补充测试”等措辞，帮助 Reviewer 更快聚焦需要关注的变更。
+第一版定位是辅助人工 Review，而不是替代人工结论。页面和报告会使用“可能风险”“建议确认”“建议补充测试”等措辞，帮助评审者更快聚焦需要关注的变更。
 
 ![AI PR Review Assistant workbench](docs/assets/workbench-demo.png)
 
@@ -44,11 +42,11 @@ storage:  browser localStorage
 ```text
 frontend/
   React + Vite + TypeScript
-  - PR URL input
-  - result display
-  - risk level display
-  - Markdown Review copy
-  - recent analyses in localStorage
+  - PR 链接输入
+  - 分析结果展示
+  - 风险级别展示
+  - Markdown Review 复制
+  - 最近分析 localStorage
 
 backend/
   FastAPI
@@ -69,32 +67,32 @@ backend/
 
 ```text
 POST /api/analyze-pr
-  -> parse GitHub PR URL
-  -> fetch PR metadata
-  -> fetch changed files + patch diff
-  -> truncate oversized diffs
-  -> run Rule Engine
-  -> run AI Provider
-  -> compose stable ReviewResult JSON + Markdown
-  -> return to frontend
+  -> 解析 GitHub PR URL
+  -> 获取 PR 元信息
+  -> 获取 changed files 和 patch diff
+  -> 截断超大 diff
+  -> 执行 Rule Engine
+  -> 执行 AI Provider
+  -> 生成稳定的 ReviewResult JSON 和 Markdown
+  -> 返回前端
 ```
 
 ### 当前状态
 
 ```text
-PR 1: project skeleton, README draft, frontend shell, backend health check.
-PR 2: Mock /api/analyze-pr endpoint and shared response schemas.
-PR 3: GitHub PR metadata and changed files fetching before Mock analysis.
-PR 4: Rule Engine scans changed files and patch diff for deterministic risks.
-PR 5: pluggable AI Provider layer with Mock / DeepSeek switching and fallback.
-PR 6: frontend workbench submits PR URLs to the backend and renders basic status, warning, and error states.
-PR 7: frontend renders detailed results, supports Markdown Review copy, and stores recent analyses in localStorage.
-PR 8: final README polish, deployment notes, design notes, and screenshots.
+PR 1: 初始化项目结构、README 草案、前端外壳和后端健康检查。
+PR 2: 实现 Mock /api/analyze-pr 接口和共享响应结构。
+PR 3: 在 Mock 分析前获取 GitHub PR 元信息和 changed files。
+PR 4: Rule Engine 基于 changed files 和 patch diff 生成确定性风险提示。
+PR 5: 增加可插拔 AI Provider，支持 Mock / DeepSeek 切换和降级。
+PR 6: 前端工作台提交 PR 链接并展示基础状态、警告和错误。
+PR 7: 前端展示详细结果，支持 Markdown Review 复制和 localStorage 最近分析。
+PR 8: 完善 README、部署说明、设计说明和截图。
 ```
 
 ### 推荐评审路径
 
-1. 按 Quick Start 本地启动后端和前端。
+1. 按快速开始本地启动后端和前端。
 2. 保持 `AI_PROVIDER=auto`，并留空 `DEEPSEEK_API_KEY` 使用 Mock 模式；也可以配置 DeepSeek API Key 获取真实模型输出。
 3. 打开 `http://localhost:5173`。
 4. 输入公开 GitHub PR 链接，例如：
@@ -103,10 +101,10 @@ PR 8: final README polish, deployment notes, design notes, and screenshots.
 https://github.com/Universeeeeeee/AI-PR-Review-Assitant/pull/7
 ```
 
-5. 查看 PR 元信息、总结、可能风险、Warning、Review 建议和 Markdown Review。
+5. 查看 PR 元信息、总结、可能风险、警告提示、Review 建议和 Markdown Review。
 6. 点击 `Copy Markdown` 复制生成的 Review 文案。
 
-### Quick Start
+### 快速开始
 
 #### 1. 启动后端
 
@@ -229,7 +227,7 @@ AI_PROVIDER=auto
 - `AI_PROVIDER=auto` 且配置了 `DEEPSEEK_API_KEY`：使用 `DeepSeekProvider`。
 - `AI_PROVIDER=mock`：强制使用 `MockProvider`。
 - `AI_PROVIDER=deepseek`：强制使用 `DeepSeekProvider`，缺少 Key 或调用失败时返回 `AI_PROVIDER_ERROR`。
-- auto 模式下 DeepSeek 超时、API 错误或返回非 JSON 时，会降级到 Mock 模式并返回 warning。
+- auto 模式下 DeepSeek 超时、API 错误或返回非 JSON 时，会降级到 Mock 模式并返回警告提示。
 - Mock 与 DeepSeek 都会保留 Rule Engine 的确定性风险结果。
 
 ### 规则引擎
@@ -253,7 +251,7 @@ maintainability: complex-condition, unclear-todo-fixme
 当前未配置 DeepSeek API Key，系统使用 Mock 模式生成报告。
 ```
 
-auto 降级时也会展示 `AI_TIMEOUT`、`AI_PROVIDER_ERROR` 或 `AI_INVALID_JSON` 等 warning。
+auto 降级时也会展示 `AI_TIMEOUT`、`AI_PROVIDER_ERROR` 或 `AI_INVALID_JSON` 等警告提示。
 
 ### 验证
 
@@ -288,14 +286,14 @@ npm run build
 开发按小 PR 拆分，每个 PR 保持 `main` 可运行，并提供清晰的 PR 描述、实现思路和测试方式。
 
 ```text
-PR 1: initialize project structure, README draft, .gitignore, .env.example
-PR 2: FastAPI mock analyze endpoint and shared schemas
-PR 3: GitHub PR URL parsing and changed files fetching
-PR 4: Rule Engine basic risk scanning
-PR 5: DeepSeekProvider + MockProvider switching and fallback
-PR 6: React workbench base page and API integration
-PR 7: result display, Markdown copy, localStorage recent analyses
-PR 8: README polish, deployment notes, design notes, screenshots
+PR 1: 初始化项目结构、README 草案、.gitignore 和 .env.example
+PR 2: FastAPI Mock 分析接口和共享 schema
+PR 3: GitHub PR URL 解析和 changed files 获取
+PR 4: Rule Engine 基础风险扫描
+PR 5: DeepSeekProvider + MockProvider 切换与降级
+PR 6: React 工作台基础页面和 API 集成
+PR 7: 结果展示、Markdown 复制和 localStorage 最近分析
+PR 8: README 完善、部署说明、设计说明和截图
 ```
 
 PR 描述模板：
@@ -316,19 +314,19 @@ PR 描述模板：
 
 - 使用 Vercel 或 Netlify。
 - 项目根目录设置为 `frontend`。
-- Build command: `npm run build`。
-- Publish directory: `dist`。
+- 构建命令：`npm run build`。
+- 发布目录：`dist`。
 - 配置 `VITE_API_BASE_URL` 指向后端地址。
 
 后端部署：
 
 - 使用 Render、Railway 或 Fly.io。
 - 服务根目录设置为 `backend`。
-- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`。
+- 启动命令：`uvicorn app.main:app --host 0.0.0.0 --port $PORT`。
 - 配置 `AI_PROVIDER`、`DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_MODEL`、`GITHUB_TOKEN`、`MAX_FILES`、`MAX_PATCH_CHARS`、`REQUEST_TIMEOUT`、`AI_TIMEOUT_SECONDS` 和 `CORS_ORIGINS`。
 - `CORS_ORIGINS` 应设置为线上前端域名。
 
-如果没有线上 Demo，评审仍可按 Quick Start 本地复现完整流程。
+如果没有线上 Demo，评审仍可按快速开始本地复现完整流程。
 
 ### 原创工作与依赖
 
@@ -339,8 +337,6 @@ PR 描述模板：
 <a id="english"></a>
 
 ## English
-
-> Default language: Chinese. Use the language selector at the top to switch manually.
 
 AI PR Review Assistant is a developer-facing web tool. After a user enters a GitHub Pull Request URL, the system fetches PR metadata, changed files, and patch diff, then combines deterministic rule scanning with a pluggable AI Provider to generate a PR summary, possible risks, review suggestions, and a copyable Markdown Review.
 
