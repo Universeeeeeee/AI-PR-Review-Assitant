@@ -14,6 +14,8 @@ AI PR Review Assistant 是一个面向开发者的 Web 工具。用户输入 Git
 
 ### 评委快速版
 
+视频演示链接：https://pan.baidu.com/s/1IIdBLdoHiY6rSbEbyEBanw?pwd=1234  提取码: 1234
+
 本项目不需要 AI API Key 也能完整运行。默认保持 `AI_PROVIDER=auto` 且不填写 `DEEPSEEK_API_KEY` 时，系统会使用高质量 Mock 模式生成报告。
 
 Windows PowerShell:
